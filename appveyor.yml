@@ -92,20 +92,26 @@ environment:
       FL_SUFFIX: "@1"
       HWP_SUFFIX: "@4.0.0-alpha.2"
 
+cache:
+  - C:\npm-cache
+
 # Install scripts. (runs after repo cloning)
 install:
+  # https://help.appveyor.com/discussions/questions/534-npm-cache
+  - md C:\npm-cache
+  - npm config set cache C:\npm-cache
   # Get the latest stable version of Node.js or io.js
   - ps: Install-Product node $env:nodejs_version
   # install modules
-  - appveyor-retry npm install --global npm@3
-  - npm install || true
+  - appveyor-retry npm install --global npm@3 --loglevel=info
+  - npm install --loglevel=info || true
   - npm rm webpack
   - npm rm extract-text-webpack-plugin
   - npm rm file-loader
-  - npm install "webpack%WEBPACK_SUFFIX%" --ignore-scripts --loglevel=error || true
-  - npm install "extract-text-webpack-plugin%ETWP_SUFFIX%" --ignore-scripts --loglevel=error || true
-  - npm install "html-webpack-plugin%HWP_SUFFIX%" --ignore-scripts --loglevel=error || true
-  - npm install "file-loader%FL_SUFFIX%" --ignore-scripts --loglevel=error || true
+  - npm install "webpack%WEBPACK_SUFFIX%" --ignore-scripts --loglevel=info || true
+  - npm install "extract-text-webpack-plugin%ETWP_SUFFIX%" --ignore-scripts --loglevel=info || true
+  - npm install "html-webpack-plugin%HWP_SUFFIX%" --ignore-scripts --loglevel=info || true
+  - npm install "file-loader%FL_SUFFIX%" --ignore-scripts --loglevel=info || true
 
 # Post-install test scripts.
 test_script:
