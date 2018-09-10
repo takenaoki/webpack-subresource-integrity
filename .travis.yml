@@ -22,7 +22,7 @@ matrix:
   - node_js: 4
     env: WEBPACK_SUFFIX="@4" ETWP_SUFFIX="@4.0.0-alpha.0" HWP_SUFFIX="@4.0.0-alpha.2"
 install:
-  - npm install --global npm
+  - npm install --global npm@5
   - npm --version
   - npm install --loglevel info || true
   - npm rm webpack
