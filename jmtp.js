@@ -46,6 +46,24 @@ WebIntegrityJsonpMainTemplatePlugin.prototype.addSriHashes =
 /*
  *  Patch jsonp-script code to add the integrity attribute.
  */
+WebIntegrityJsonpMainTemplatePlugin.prototype.linkPreloadPlugin =
+  function linkPreloadPlugin(mainTemplate, source) {
+    if (!mainTemplate.outputOptions.crossOriginLoading) {
+      this.sriPlugin.errorOnce(
+        this.compilation,
+        'webpack option output.crossOriginLoading not set, code splitting will not work!'
+      );
+    }
+    return (Template.asString || mainTemplate.asString)([
+      source,
+      'link.integrity = sriHashes[chunkId];',
+      'link.crossOrigin = ' + JSON.stringify(mainTemplate.outputOptions.crossOriginLoading) + ';',
+    ]);
+  };
+
+/*
+ *  Patch jsonp-script code to add the integrity attribute.
+ */
 WebIntegrityJsonpMainTemplatePlugin.prototype.jsonpScriptPlugin =
   function jsonpScriptPlugin(mainTemplate, source) {
     if (!mainTemplate.outputOptions.crossOriginLoading) {
@@ -65,6 +83,7 @@ WebIntegrityJsonpMainTemplatePlugin.prototype.apply = function apply(
   mainTemplate
 ) {
   var jsonpScriptPlugin = this.jsonpScriptPlugin.bind(this, mainTemplate);
+  var linkPreloadPlugin = this.linkPreloadPlugin.bind(this, mainTemplate);
   var addSriHashes = this.addSriHashes.bind(this, mainTemplate);
 
   if (!mainTemplate.hooks) {
@@ -72,6 +91,7 @@ WebIntegrityJsonpMainTemplatePlugin.prototype.apply = function apply(
     mainTemplate.plugin('local-vars', addSriHashes);
   } else if (mainTemplate.hooks.jsonpScript && mainTemplate.hooks.localVars) {
     mainTemplate.hooks.jsonpScript.tap('SriPlugin', jsonpScriptPlugin);
+    mainTemplate.hooks.linkPreload.tap('SriPlugin', linkPreloadPlugin);
     mainTemplate.hooks.localVars.tap('SriPlugin', addSriHashes);
   } else {
     this.sriPlugin.warnOnce(
