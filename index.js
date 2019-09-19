@@ -170,7 +170,6 @@ SubresourceIntegrityPlugin.prototype.warnIfHotUpdate = function warnIfHotUpdate(
 SubresourceIntegrityPlugin.prototype.replaceAsset = function replaceAsset(
   assets,
   hashByChunkId,
-  chunk,
   chunkFile
 ) {
   var oldSource = assets[chunkFile].source();
@@ -233,7 +232,6 @@ SubresourceIntegrityPlugin.prototype.processChunk = function processChunk(
     newAsset = self.replaceAsset(
       assets,
       hashByChunkId,
-      childChunk,
       sourcePath);
 
     if (newAsset.integrity) {
