@@ -43,6 +43,10 @@ function SubresourceIntegrityPlugin(options) {
   this.emittedMessages = {};
 }
 
+SubresourceIntegrityPlugin.prototype.isIgnoreName = function isIgnoreName(name) {
+  return this.options.ignores.findIndex((str) => name.indexOf(str) === 0) >= 0;
+};
+
 SubresourceIntegrityPlugin.prototype.emitMessage = function emitMessage(messages, message) {
   messages.push(new Error('webpack-subresource-integrity: ' + message));
 };
@@ -166,6 +170,7 @@ SubresourceIntegrityPlugin.prototype.warnIfHotUpdate = function warnIfHotUpdate(
 SubresourceIntegrityPlugin.prototype.replaceAsset = function replaceAsset(
   assets,
   hashByChunkId,
+  chunk,
   chunkFile
 ) {
   var oldSource = assets[chunkFile].source();
@@ -189,6 +194,10 @@ SubresourceIntegrityPlugin.prototype.replaceAsset = function replaceAsset(
 
   // eslint-disable-next-line no-param-reassign
   assets[chunkFile] = newAsset;
+
+  if (this.isIgnoreName(chunkFile)) {
+    return newAsset;
+  }
 
   newAsset.integrity = util.computeIntegrity(hashFuncNames, newAsset.source());
   return newAsset;
@@ -224,8 +233,12 @@ SubresourceIntegrityPlugin.prototype.processChunk = function processChunk(
     newAsset = self.replaceAsset(
       assets,
       hashByChunkId,
+      childChunk,
       sourcePath);
-    hashByChunkId.set(childChunk.id, newAsset.integrity);
+
+    if (newAsset.integrity) {
+      hashByChunkId.set(childChunk.id, newAsset.integrity);
+    }
   });
 };
 
@@ -240,7 +253,7 @@ SubresourceIntegrityPlugin.prototype.addMissingIntegrityHashes =
     var self = this;
     Object.keys(assets).forEach(function loop(assetKey) {
       var asset = assets[assetKey];
-      if (!asset.integrity) {
+      if (!asset.integrity && !self.isIgnoreName(assetKey)) {
         asset.integrity = util.computeIntegrity(self.options.hashFuncNames, asset.source());
       }
     });
@@ -266,7 +279,7 @@ SubresourceIntegrityPlugin.prototype.processTag =
     var src = this.hwpAssetPath(util.getTagSrc(tag));
     /* eslint-disable no-param-reassign */
     var integrity = util.getIntegrityChecksumForAsset(compilation.assets, src);
-    if (!Object.prototype.hasOwnProperty.call(tag.attributes, "integrity")) {
+    if (!Object.prototype.hasOwnProperty.call(tag.attributes, "integrity") && !this.isIgnoreName(src)) {
       tag.attributes.integrity = integrity;
       tag.attributes.crossorigin = compilation.compiler.options.output.crossOriginLoading || 'anonymous';
     }
@@ -380,11 +393,15 @@ SubresourceIntegrityPlugin.prototype.afterPlugins = function afterPlugins(compil
   if (compiler.hooks) {
     compiler.hooks.thisCompilation.tap('SriPlugin', this.thisCompilation.bind(this, compiler));
   } else {
-    compiler.plugin('this-compilation', this.thisCompilation.bind(this, compiler));
+    // HtmlWebpackIncludeAssetsPlugin のイベント登録の後に処理したいので、
+    // this-compilation から compilation に変更
+    // compiler.plugin('this-compilation', this.thisCompilation.bind(this, compiler));
+    compiler.plugin('compilation', this.thisCompilation.bind(this, compiler));
   }
 };
 
 SubresourceIntegrityPlugin.prototype.apply = function apply(compiler) {
+  debugger;
   if (compiler.hooks) {
     compiler.hooks.afterPlugins.tap('SriPlugin', this.afterPlugins.bind(this));
   } else {
