@@ -393,13 +393,11 @@ SubresourceIntegrityPlugin.prototype.afterPlugins = function afterPlugins(compil
   } else {
     // HtmlWebpackIncludeAssetsPlugin のイベント登録の後に処理したいので、
     // this-compilation から compilation に変更
-    // compiler.plugin('this-compilation', this.thisCompilation.bind(this, compiler));
     compiler.plugin('compilation', this.thisCompilation.bind(this, compiler));
   }
 };
 
 SubresourceIntegrityPlugin.prototype.apply = function apply(compiler) {
-  debugger;
   if (compiler.hooks) {
     compiler.hooks.afterPlugins.tap('SriPlugin', this.afterPlugins.bind(this));
   } else {
